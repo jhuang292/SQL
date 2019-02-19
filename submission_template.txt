@@ -20,11 +20,11 @@
     <student>
         <name>
             <!-- Insert your full name on the line below. -->
-            
+	    Junxiong Huang            
         </name>
         <sunet>
             <!-- Insert your UWNet ID (NOT your student ID number!) below. -->
-
+            jhuang292
         </sunet>
     </student>
 
@@ -33,28 +33,50 @@
     <answer number="1a">
         <!-- Paste your solution to problem 1, part (a) below this line. --><![CDATA[
 
-
+	SELECT A.i AS i, A.j AS j, (A.val * B.val) AS val 
+	FROM A, B 
+	WHERE A.i = B.i AND A.j = B.j
 
         ]]><!-- End problem 1, part (a). -->
     </answer>
     <answer number="1b">
         <!-- Paste your solution to problem 1, part (b) below this line. --><![CDATA[
-
-
+	
+	SELECT tb1.i AS i, tb2.j AS j, tb2.val AS val
+	FROM A AS tb1, A AS tb2
+	WHERE (tb1.i+1) % 3 = tb2.i AND tb1.j = tb2.j;
 
         ]]><!-- End problem 1, part (b). -->
     </answer>
     <answer number="1c">
         <!-- Paste your solution to problem 1, part (c) below this line. --><![CDATA[
 
-
+	SELECT tb3.i AS i, tb4.j AS j, tb4.val AS val
+	FROM (
+		SELECT tb1.i AS i, tb2.j AS j, tb2.val AS val
+		FROM A AS tb1, A AS tb2
+		WHERE (tb1.i+1) % 3 = tb2.i AND tb1.j = tb2.j
+		) AS tb3, 
+	     (
+		SELECT tb1.i AS i, tb2.j AS j, tb2.val AS val
+		FROM A AS tb1, A AS tb2
+		WHERE (tb1.i+1) % 3 = tb2.i AND tb1.j = tb2.j
+		) AS tb4
+	WHERE (tb3.i+1) % 3 = tb4.i AND tb3.j = tb4.j;
 
         ]]><!-- End problem 1, part (c). -->
     </answer>
     <answer number="1d">
         <!-- Paste your solution to problem 1, part (d) below this line. --><![CDATA[
 
-
+	SELECT tb1.i AS i, tb1.j AS j, MAX(tb2.val) AS val
+	FROM A AS tb1, A AS tb2
+	WHERE (tb1.i = tb2.i AND tb1.j = tb2.j + 1) OR
+		(tb1.i = tb2.i + 1 AND tb1.j = tb2.j) OR
+		(tb1.i = tb2.i AND tb1.j = tb2.j - 1) OR
+		(tb1.i = tb2.i - 1 AND tb1.j = tb2.j) OR
+		(tb1.i = tb2.i AND tb1.j = tb2.j)
+	GROUP BY tb1.i, tb1.j;
 
         ]]><!-- End problem 1, part (d). -->
     </answer>
@@ -65,14 +87,79 @@
     <answer number="2a">
         <!-- Paste your solution to problem 2, part (a) below this line. --><![CDATA[
 
-
+	SELECT region, COUNT(*) AS num_state_winners
+	FROM (
+		SELECT *
+		FROM (
+		        SELECT tb.region AS region
+		        FROM energy AS tb
+		        GROUP BY tb.region
+		        ORDER BY SUM(tb.solar) DESC
+		        LIMIT 1
+		        )
+		UNION ALL
+		SELECT *
+		FROM (
+		        SELECT tb.region AS region
+		        FROM energy AS tb
+		        GROUP BY tb.region
+		        ORDER BY SUM(wind) DESC
+		        LIMIT 1
+		        )
+		UNION ALL
+		SELECT *
+		FROM (
+		        SELECT tb.region AS region
+		        FROM energy AS tb
+		        GROUP BY tb.region
+		        ORDER BY SUM(hydro) DESC
+		        LIMIT 1
+		        )
+		UNION ALL
+		SELECT *
+		FROM (
+		        SELECT tb.region AS region
+		        FROM energy AS tb
+		        GROUP BY tb.region
+		        ORDER BY SUM(nuclear) DESC
+		        LIMIT 1
+		        )
+		)
+	GROUP BY region
+	ORDER BY COUNT(*) DESC;
 
         ]]><!-- End problem 2, part (a). -->
     </answer>
     <answer number="2b">
         <!-- Paste your solution to problem 2, part (b) below this line. --><![CDATA[
 
+	SELECT *
+	FROM (
+		SELECT *
+		FROM (
+		        SELECT tb.state AS state, tb.solar AS solar, tb.wind AS wind
+		        FROM (
+		                SELECT tb.state AS state, SUM(tb.solar) AS solar, SUM(tb.wind) AS wind
+		                FROM energy AS tb
+		                GROUP BY tb.state
+		                ORDER BY (SUM(tb.solar) + SUM(tb.wind)) DESC
+		                LIMIT 3
+		                ) AS tb
+		                ORDER BY ABS(tb.solar - tb.wind) ASC
+		                LIMIT 1
+		      ) 
+		UNION ALL
 
+		SELECT * 
+		FROM (
+		        SELECT tb.state AS state, SUM(tb.solar) AS solar, SUM(tb.wind) AS wind
+		        FROM energy AS tb
+		        GROUP BY tb.state
+		        ORDER BY (SUM(tb.solar) + SUM(tb.wind)) DESC
+		        LIMIT 1
+		    ) 
+	    )
+	ORDER BY solar + wind DESC;
 
         ]]><!-- End problem 2, part (b). -->
     </answer>
@@ -83,21 +170,51 @@
     <answer number="3a">
         <!-- Paste your solution to problem 3, part (a) below this line. --><![CDATA[
 
-
+	SELECT X.i AS i, SUM(X.val * MODEL.val) AS val
+	FROM X, MODEL
+	WHERE X.j = MODEL.j
+	GROUP BY X.i
+	LIMIT 5;
 
         ]]><!-- End problem 3, part (a). -->
     </answer>
     <answer number="3b">
         <!-- Paste your solution to problem 3, part (b) below this line. --><![CDATA[
 
-
+	DROP VIEW IF EXISTS PREDICTION;
+	CREATE VIEW PREDICTION AS
+	SELECT i, CASE
+		    WHEN val > 0
+		        THEN 1
+		    ELSE 0
+		END AS val
+	FROM (
+		SELECT X.i AS i, SUM(X.val * MODEL.val) AS val
+		FROM X, MODEL
+		WHERE X.j = MODEL.j
+		GROUP BY X.i
+		);
 
         ]]><!-- End problem 3, part (b). -->
     </answer>
     <answer number="3c">
         <!-- Paste your solution to problem 3, part (c) below this line. --><![CDATA[
 
-
+	SELECT ROUND(COUNT(CASE
+		    WHEN tb.predict = tb.real
+		        THEN tb.predict
+		END), 3) / ROUND(COUNT(*),3) AS accuracy
+		
+	FROM (
+	       SELECT P.i AS i, P.val AS predict, R.Label As real
+		FROM PREDICTION AS P
+		INNER JOIN
+		(
+		        SELECT i, Label
+		        FROM IRIS
+		        ) AS R
+		ON P.i = R.i 
+		) AS tb;
 
         ]]><!-- End problem 3, part (c). -->
     </answer>
@@ -108,7 +225,107 @@
     <answer number="bonus1">
         <!-- Paste your solution to bonus problem 1 below this line. --><![CDATA[
 
-
+	SELECT tb1.j, ROUND((tb1.val + tb2.val), 8) AS val
+	FROM MODEL AS tb1
+	INNER JOIN 
+	(
+	    SELECT 
+		  ( SELECT COUNT(*) - 1 
+		    FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.SepalLength) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		                ) 
+		  ) as j, tb1.val 
+		FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.SepalLength) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		            ) AS tb1
+		UNION
+		SELECT 
+		  ( SELECT COUNT(*) 
+		    FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.SepalWidth) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		                ) 
+		  ) as j, tb2.val 
+		FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.SepalWidth) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		            ) AS tb2
+		UNION
+		SELECT 
+		  ( SELECT COUNT(*) + 1 
+		    FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.PetalLength) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		                ) 
+		  ) as j, tb3.val 
+		FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.PetalLength) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		            ) AS tb3
+		UNION
+		SELECT 
+		  ( SELECT COUNT(*) + 2 
+		    FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.PetalWidth) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		                ) 
+		  ) as j, tb4.val 
+		FROM (
+		                SELECT 0.0001*SUM((R.Label-P.val)*R.PetalWidth) AS val
+		                FROM PREDICTION AS P
+		                INNER JOIN
+		                (
+		                        SELECT *
+		                        FROM IRIS
+		                        ) AS R
+		                ON P.i = R.i 
+		            ) AS tb4
+		) AS tb2
+	ON tb1.j = tb2.j;
 
         ]]><!-- End bonus problem 1. -->
     </answer>
